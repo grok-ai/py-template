@@ -71,7 +71,8 @@ def environ(**kwargs):
     :type kwargs: dict[str, unicode]
     :param kwargs: Environment variables to set
     """
-    old_environ = dict(os.environ)
+    # Use a copy of os.environ to ensure we have an independent backup.
+    old_environ = os.environ.copy()
     os.environ.update(kwargs)
     try:
         yield

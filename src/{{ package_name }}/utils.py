@@ -108,24 +108,24 @@ def seed_everything(seed: Optional[int] = None) -> int:
     if seed is None:
         env_seed = os.environ.get("PL_GLOBAL_SEED")
         if env_seed is None:
-            seed = _select_seed_randomly(min_seed_value, max_seed_value)
-            pylogger.warn(f"No seed found, seed set to {seed}")
+            seed = _select_seed_randomly()
+            pylogger.warning(f"No seed found, seed set to {seed}")
         else:
             try:
                 seed = int(env_seed)
             except ValueError:
-                seed = _select_seed_randomly(min_seed_value, max_seed_value)
-                pylogger.warn(
-                    f"Invalid seed found: {repr(env_seed)}, seed set to {seed}"
+                seed = _select_seed_randomly()
+                pylogger.warning(
+                    f"Invalid seed found: {env_seed!r}, seed set to {seed}"
                 )
     elif not isinstance(seed, int):
         seed = int(seed)
 
     if not (min_seed_value <= seed <= max_seed_value):
-        pylogger.warn(
-            f"{seed} is not in bounds, numpy accepts from {min_seed_value} to {max_seed_value}"
+        pylogger.warning(
+            f"{seed} is out of bounds (must be between {min_seed_value} and {max_seed_value}). Selecting a new seed."
         )
-        seed = _select_seed_randomly(min_seed_value, max_seed_value)
+        seed = _select_seed_randomly()
 
     pylogger.info(f"Seed set to {seed}")
     os.environ["PL_GLOBAL_SEED"] = str(seed)

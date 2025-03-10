@@ -14,12 +14,11 @@ pylogger = logging.getLogger(__name__)
 def get_env(env_name: str, default: Optional[str] = None) -> str:
     """Safely read an environment variable.
 
-    Raises errors if it is not defined or it is empty.
+    Raises errors if it is not defined or is empty.
 
-    :param env_name: the name of the environment variable
-    :param default: the default (optional) value for the environment variable
-
-    :return: the value of the environment variable
+    :param env_name: Name of the environment variable.
+    :param default: Optional default value if the variable is not set.
+    :return: The environment variable's value.
     """
     if env_name not in os.environ:
         if default is None:
@@ -42,13 +41,13 @@ def get_env(env_name: str, default: Optional[str] = None) -> str:
 
 
 def load_envs(env_file: Optional[str] = None) -> None:
-    """Load all the environment variables defined in the `env_file`.
+    """Load environment variables from a file.
 
-    This is equivalent to `. env_file` in bash.
+    This is equivalent to sourcing the file in a shell.
 
     It is possible to define all the system specific variables in the `env_file`.
 
-    :param env_file: the file that defines the environment variables to use. If None
+    :param env_file: The file that defines the environment variables to use. If None,
                      it searches for a `.env` file in the project.
     """
     if env_file is None:
@@ -89,7 +88,8 @@ min_seed_value = np.iinfo(np.uint32).min
 def _select_seed_randomly(
     min_seed_value: int = min_seed_value, max_seed_value: int = max_seed_value
 ) -> int:
-    return random.randint(min_seed_value, max_seed_value)  # noqa: S3
+    """Select a random seed within the provided bounds."""
+    return random.randint(min_seed_value, max_seed_value) # noqa: S3
 
 
 def seed_everything(seed: Optional[int] = None) -> int:

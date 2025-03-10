@@ -27,6 +27,6 @@ echo "✅ 'uv' is installed!"
 
 # Run Copier using UVX (no global install)
 echo "📦 Running Copier for project '$folder_name'..."
-uvx copier copy --trust gh:grok-ai/py-template "$folder_name"
+uvx --from "copier==9.5.0" copier copy --trust gh:grok-ai/py-template "$folder_name"
 
 echo "🎉 Done! Your project is ready in '$folder_name'."

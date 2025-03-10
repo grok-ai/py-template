@@ -46,7 +46,7 @@ jobs:
 
       - name: 🚀 Generate Project with
         run: |
-          uvx copier copy --trust --force . ${{ env.PROJECT_NAME }} \
+          uvx --from "copier==9.5.0" copier copy --trust --force . ${{ env.PROJECT_NAME }} \
             -d remote_option=${{ matrix.remote_option }} \
             -d remote_github_protocol=${{ matrix.remote_github_protocol }} \
             -d remote_github_username=grok-ai \

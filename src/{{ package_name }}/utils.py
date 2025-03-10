@@ -4,9 +4,9 @@ import random
 from contextlib import contextmanager
 from typing import Optional
 
+
 import dotenv
 import numpy as np
-import torch
 
 pylogger = logging.getLogger(__name__)
 
@@ -130,7 +130,12 @@ def seed_everything(seed: Optional[int] = None) -> int:
     os.environ["PL_GLOBAL_SEED"] = str(seed)
     random.seed(seed)
     np.random.seed(seed)
-    torch.manual_seed(seed)
-    torch.cuda.manual_seed_all(seed)
+    try:
+        import torch
+
+        torch.manual_seed(seed)
+        torch.cuda.manual_seed_all(seed)
+    except ImportError:
+        pass
 
     return seed

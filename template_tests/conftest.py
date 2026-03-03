@@ -19,14 +19,6 @@ def get_package_name(project_name: str) -> str:
     return project_name.lower().replace(" ", "_").replace("-", "_")
 
 
-def get_copier_version(template_dir: Path) -> str:
-    """Read copier version from copier.yml."""
-    copier_yml = template_dir / "copier.yml"
-    with open(copier_yml) as f:
-        config = yaml.safe_load(f)
-    return config["_min_copier_version"]
-
-
 def generate_project(
     template_dir: Path,
     output_dir: Path,
@@ -42,11 +34,8 @@ def generate_project(
     Returns:
         Path to the generated project.
     """
-    copier_version = get_copier_version(template_dir)
     cmd = [
         "uvx",
-        "--from",
-        f"copier=={copier_version}",
         "copier",
         "copy",
         "--trust",

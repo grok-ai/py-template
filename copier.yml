@@ -1,4 +1,4 @@
-_min_copier_version: "9.5.0"
+_min_copier_version: "9.7.0"
 _templates_suffix: ".tmpl"
 _exclude:
   - .git

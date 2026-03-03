@@ -13,7 +13,9 @@ jobs:
   test-template:
     runs-on: ubuntu-latest
     strategy:
+      fail-fast: false
       matrix:
+        copier_version: ["9.7.0", "latest"]
         remote_url: ["", "https://github.com/grok-ai/dummy-repo.git"]
         use_precommit: [true, false]
         env_init: [true, false]
@@ -37,15 +39,14 @@ jobs:
           git config --global user.name "GitHubActions"
           git config --global user.email "github-actions@users.noreply.github.com"
 
-      - name: Get Copier Version
-        id: copier-version
-        run: |
-          VERSION=$(grep '_min_copier_version:' copier.yml | sed 's/.*: *"\(.*\)"/\1/')
-          echo "version=$VERSION" >> $GITHUB_OUTPUT
-
       - name: Generate Project
         run: |
-          uvx --from "copier==${{ steps.copier-version.outputs.version }}" copier copy --trust --force . ${{ env.PROJECT_NAME }} \
+          if [ "${{ matrix.copier_version }}" = "latest" ]; then
+            COPIER_CMD="uvx copier"
+          else
+            COPIER_CMD="uvx --from copier==${{ matrix.copier_version }} copier"
+          fi
+          $COPIER_CMD copy --trust --force . ${{ env.PROJECT_NAME }} \
             -d project_name=testpkg \
             -d "description=A test project" \
             -d use_precommit=${{ matrix.use_precommit }} \

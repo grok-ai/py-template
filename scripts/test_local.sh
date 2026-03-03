@@ -47,12 +47,9 @@ export GIT_CONFIG_COUNT=1
 export GIT_CONFIG_KEY_0="init.defaultBranch"
 export GIT_CONFIG_VALUE_0="main"
 
-# Get copier version from copier.yml (single source of truth)
-COPIER_VERSION=$(grep '_min_copier_version:' "$TEMPLATE_DIR/copier.yml" | sed 's/.*: *"\(.*\)"/\1/')
-
 # Generate project
 echo "[1/4] Generating project..."
-uvx --from "copier==$COPIER_VERSION" copier copy --trust --force "$TEMPLATE_DIR" "$PROJECT_DIR" \
+uvx copier copy --trust --force "$TEMPLATE_DIR" "$PROJECT_DIR" \
     -d project_name="$PROJECT_NAME" \
     -d description="A test project generated locally" \
     -d remote_url="" \

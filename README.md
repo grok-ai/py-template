@@ -41,10 +41,13 @@ A template to bootstrap Python projects following best practices in seconds.
 curl -LsSf https://astral.sh/uv/install.sh | sh
 
 # Create project
-uvx --from "copier==9.5.0" copier copy --trust gh:grok-ai/py-template my-project
+uvx copier copy --trust gh:grok-ai/py-template my-project
 ```
 
 Follow the prompts. That's it.
+
+> **Pinning Copier version:** If you encounter issues, you can pin to a specific version:
+> `uvx --from "copier==9.12.0" copier copy --trust gh:grok-ai/py-template my-project`
 
 **What happens:**
 ```
@@ -100,7 +103,7 @@ uv run ruff format .
 Skip prompts by passing values directly:
 
 ```bash
-uvx --from "copier==9.5.0" copier copy --trust \
+uvx copier copy --trust \
   -d project_name=my_package \
   -d description="My project" \
   -d use_precommit=true \
@@ -113,7 +116,7 @@ uvx --from "copier==9.5.0" copier copy --trust \
 Add dependencies during generation:
 
 ```bash
-uvx --from "copier==9.5.0" copier copy --trust \
+uvx copier copy --trust \
   -d 'extra_dependencies=["requests", "numpy", "pandas"]' \
   gh:grok-ai/py-template my-project
 ```
@@ -146,7 +149,7 @@ Pull in template updates without losing your changes:
 
 ```bash
 cd my-project
-uvx --from "copier==9.5.0" copier update --trust
+uvx copier update --trust
 ```
 
 ## Built-in Utilities
@@ -205,7 +208,7 @@ with environ(API_KEY="secret", DEBUG="true"):
 2. Create a feature branch
 3. Test your changes locally:
    ```bash
-   uvx --from "copier==9.5.0" copier copy --trust . /tmp/test-project
+   uvx copier copy --trust . /tmp/test-project
    ```
 4. Submit a pull request
 

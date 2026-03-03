@@ -1,0 +1,40 @@
+name: Update Pre-commit Hooks
+
+on:
+  schedule:
+    # Run every Monday at 9:00 AM UTC
+    - cron: '0 9 * * 1'
+  workflow_dispatch: # Allow manual trigger
+
+permissions:
+  contents: write
+  pull-requests: write
+
+jobs:
+  update-hooks:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v4
+
+      - name: Install uv
+        run: |
+          curl -LsSf https://astral.sh/uv/install.sh | sh
+          echo "$HOME/.local/bin:$HOME/.cargo/bin" >> $GITHUB_PATH
+
+      - name: Run pre-commit autoupdate
+        run: |
+          uvx pre-commit autoupdate --config .pre-commit-config.yaml.tmpl
+
+      - name: Create Pull Request
+        uses: peter-evans/create-pull-request@v7
+        with:
+          commit-message: "chore: update pre-commit hooks to latest versions"
+          title: "chore: update pre-commit hooks"
+          body: |
+            This PR updates pre-commit hooks to their latest versions.
+
+            Generated automatically by the `update-pre-commit-hooks` workflow.
+          branch: auto-update-pre-commit-hooks
+          delete-branch: true
+          labels: dependencies, automated

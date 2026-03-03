@@ -1,120 +1,222 @@
 # py-template
 
-A template to bootstrap Python projects following best practices.
+A template to bootstrap Python projects following best practices in seconds.
 
-## 🚀 How to Use This Template
+## What It Does
 
-You can create a new project in **two ways**:
-
-### 🔹 Automatic Setup (Recommended)
-
-Run:
-
-```bash
-curl -fsSL https://raw.githubusercontent.com/grok-ai/py-template/main/setup.sh -o setup.sh && bash setup.sh
+```
+┌─────────────────┐         ┌─────────────────────────────────┐
+│  py-template    │         │  Your New Project               │
+│  (this repo)    │         │                                 │
+│                 │  ───►   │  ├── src/your_package/          │
+│  Copier         │         │  │   ├── __init__.py            │
+│  Template       │         │  │   └── utils.py               │
+│                 │         │  ├── tests/                     │
+└─────────────────┘         │  ├── pyproject.toml             │
+                            │  ├── .pre-commit-config.yaml    │
+                            │  └── .venv/ (ready to use)      │
+                            └─────────────────────────────────┘
 ```
 
-This will:
-- Install [uv](https://github.com/astral-sh/uv) if needed.
-- Use [Copier](https://copier.readthedocs.io/en/stable/) to generate the project.
-- Prompt for project configuration (see [Customize the Project](#3-customize-the-project)).
-- (Optionally) set up the environment (dependencies, virtual environment).
-- Initialize Git and optionally push the repository.
+**What you get:**
+- `get_project_root()` for finding the repo root (cached, lazy)
+- `.env` files loaded automatically on import
+- Built-in utilities (`get_env()`, `seed_everything()`, `environ()`)
+- Pre-configured tooling (ruff, pytest, mypy, pre-commit)
+- Git initialized with first commit
 
-### 🔹 Manual Setup
+## Why Use This Template
 
-Install [uv](https://github.com/astral-sh/uv) and set up Copier:
+| Problem | Solution |
+|---------|----------|
+| Copy-pasting boilerplate between projects | One command generates everything |
+| Inconsistent project structure across teams | Standardized layout every time |
+| Manual setup of linting, testing, env management | Best practices baked in |
+| "Works on my machine" issues | Reproducible environments with uv |
+
+## Quick Start
 
 ```bash
+# Install uv (if needed)
 curl -LsSf https://astral.sh/uv/install.sh | sh
-export PATH="$HOME/.local/bin:$HOME/.cargo/bin:$PATH"
+
+# Create project
+uvx --from "copier==9.5.0" copier copy --trust gh:grok-ai/py-template my-project
 ```
 
-Then, create a new project with:
+Follow the prompts. That's it.
+
+**What happens:**
+```
+🎤 Project name: my_project
+🎤 Description: My awesome project
+🎤 Initialize environment now? Yes
+...
+[1/5] Installing dependencies with uv...
+[2/5] Initializing Git repository...
+[3/5] Installing pre-commit hooks...
+[4/5] Creating initial commit...
+[5/5] Done!
+```
+
+## Using Your New Project
 
 ```bash
-uvx copier copy --trust gh:grok-ai/py-template <project-folder>
+cd my-project
+
+# Run your package
+uv run python -m my_project
+
+# Run tests
+uv run pytest
+
+# Add dependencies
+uv add requests numpy
+
+# Format and lint
+uv run ruff check --fix .
+uv run ruff format .
 ```
 
-Once completed, the project will be initialized in `<project-folder>`.
+## Configuration Options
 
----
+| Option | Default | Description |
+|--------|---------|-------------|
+| `project_name` | folder name | Project name (can have hyphens/spaces; package name is derived automatically) |
+| `description` | — | Short project description |
+| `maintainers` | — | List of maintainers (name + email) |
+| `remote_url` | `""` (empty) | Git remote URL (leave empty for no remote) |
+| `push_to_remote` | `false` | Push initial commit to remote (only asked if remote_url is set) |
+| `license` | `MIT` | `MIT` or `Apache-2.0` |
+| `use_precommit` | `true` | Install pre-commit hooks |
+| `extra_dependencies` | `[]` | Additional pip packages |
+| `env_init` | `true` | Create virtualenv and install deps |
+| `python_version` | `>=3.9` | Python version constraint |
 
-## 3. Customize the Project
+## Advanced Usage
 
-During setup, you will be prompted for the following configurations:
+### Non-interactive Generation
 
-- **Project Folder**: Name of the project folder.
-- **Python Package Name**: Defaults to the folder name in lowercase with spaces replaced by underscores.
-- **Description**: A short description of your project.
-- **Maintainers**: A list of maintainers (name & email).
-- **Remote Option** (`remote_option`):
-  - **GitHub**: Push the project to a GitHub repository.
-  - **Manual**: Provide a custom remote URL (e.g., GitHub, GitLab, Bitbucket).
-  - **No Remote**: Skip configuring a remote.
-- **Push to Remote** (`push_to_remote`): If using GitHub or manual, decide whether to automatically push after initialization.
-- **License**: Choose a license (MIT, Apache-2.0).
-- **Use Pre-commit Hooks** (`use_precommit`): Enable or disable pre-commit hooks.
-- **Dependencies**: Define dependencies to install.
-- **Initialize Environment** (`env_init`): Choose whether to set up a virtual environment immediately.
-
----
-
-## 4. Manual Push to a Remote Repository (Optional)
-
-If `push_to_remote=false` or no remote was set, you can manually add and push later:
+Skip prompts by passing values directly:
 
 ```bash
-git remote add origin https://github.com/your/repository
-git push -u origin main
+uvx --from "copier==9.5.0" copier copy --trust \
+  -d project_name=my_package \
+  -d description="My project" \
+  -d use_precommit=true \
+  -d env_init=true \
+  gh:grok-ai/py-template my-project
 ```
 
-Use the appropriate URL for GitHub, GitLab, or any other Git host.
+### Custom Dependencies
 
----
+Add dependencies during generation:
 
-## 5. Development Setup
+```bash
+uvx --from "copier==9.5.0" copier copy --trust \
+  -d 'extra_dependencies=["requests", "numpy", "pandas"]' \
+  gh:grok-ai/py-template my-project
+```
 
-Once set up, manage dependencies with uv. The virtual environment is stored in `.venv`.
+### Remote Setup Options
 
----
+Git is always initialized. The `remote_url` option controls remote configuration.
 
-## ✨ Features
+**No remote (default):**
+```bash
+# Git initialized, no remote configured. Add one later manually.
+-d remote_url=""
+```
 
-- **Version Control**: Automatically initializes a Git repository.
-- **Optional Remote Push**: Configure a Git remote (GitHub or manual) and optionally push to it.
-- **Pre-commit Hooks**: If enabled, sets up [pre-commit hooks](https://pre-commit.com/).
-- **Modern Project Structure**: Uses an organized `src/` layout.
-- **Flexible**: Simple configuration logic for licensing, dependencies, and environment setup.
-- **`PROJECT_ROOT` Variable**: Automatically defines this variable in the main package (using git).
-- **Auto-loads `.env`**: Loads environment variables from a `.env` file automatically.
-- **Built-in Utilities**: Ships with a `utils.py` file for common utility functions.
+**Add remote without pushing:**
+```bash
+# Remote configured, but doesn't push. You can push when ready.
+-d remote_url=git@github.com:user/repo.git -d push_to_remote=false
+```
 
----
+**Add remote and push immediately:**
+```bash
+# Remote configured and pushes initial commit.
+-d remote_url=git@github.com:user/repo.git -d push_to_remote=true
+```
 
-## 🔧 Customization
+### Updating Existing Projects
 
-Modify this template by editing:
+Pull in template updates without losing your changes:
 
-- `copier.yml`: Adjust or add configuration options.
-- `pyproject.toml`: Define dependencies, linting, and testing configurations.
-- `.pre-commit-config.yaml`: Manage pre-commit hooks.
-- `setup.sh`: Modify automation steps.
+```bash
+cd my-project
+uvx --from "copier==9.5.0" copier update --trust
+```
 
----
+## Built-in Utilities
 
-## 📝 License
+Your generated project includes these utilities in `utils.py`:
 
-This project is licensed under the **MIT License**. See LICENSE for more details.
+### get_project_root()
 
----
+Returns the git repository root (cached after first call):
 
-### Support
+```python
+from my_project import get_project_root
 
-For issues or suggestions, open an issue on GitHub: https://github.com/grok-ai/py-template/issues
+config_path = get_project_root() / "config.yaml"
+```
 
----
+Falls back to current working directory if not in a git repo.
+
+### get_env()
+
+Safe environment variable reading with defaults:
+
+```python
+from my_project.utils import get_env
+
+api_key = get_env("API_KEY")                       # Raises KeyError if missing
+debug = get_env("DEBUG", default="false")           # Returns default if missing/empty
+```
+
+### seed_everything()
+
+Reproducible randomness for ML workflows:
+
+```python
+from my_project.utils import seed_everything
+
+seed_everything(42)  # Seeds random, numpy, and torch (if installed)
+```
+
+### environ()
+
+Temporary environment variable context manager:
+
+```python
+from my_project.utils import environ
+
+with environ(API_KEY="secret", DEBUG="true"):
+    # Variables set only within this block
+    ...
+# Original environment restored
+```
+
+## Contributing
+
+1. Fork the repository
+2. Create a feature branch
+3. Test your changes locally:
+   ```bash
+   uvx --from "copier==9.5.0" copier copy --trust . /tmp/test-project
+   ```
+4. Submit a pull request
+
+## License
+
+MIT License. See [LICENSE](LICENSE) for details.
 
 ## Maintainers
 
-- Valentino Maiorca [@Flegyas](https://github.com/Flegyas)
+- Valentino Maiorca ([@Flegyas](https://github.com/Flegyas))
+
+---
+
+**Questions or issues?** Open an issue at [github.com/grok-ai/py-template/issues](https://github.com/grok-ai/py-template/issues)

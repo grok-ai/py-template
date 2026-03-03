@@ -4,7 +4,7 @@
 
 ---
 
-## 🚀 Installation
+## Installation
 
 You can install this project using [`uv`](https://github.com/astral-sh/uv):
 
@@ -18,12 +18,14 @@ uv sync
 
 ```
 {{ project_name }}/
-├── src/                     # Source directory
-│   ├── {{ package_name }}/  # Main package
-│   │   ├── __init__.py
-│   │   ├── main.py
-│   ├── tests/               # Test suite
-│   │   ├── test_main.py
+├── src/
+│   └── {{ package_name }}/  # Main package
+│       ├── __init__.py
+│       └── utils.py
+├── tests/                   # Test suite
+│   ├── conftest.py
+│   ├── test_init.py
+│   └── test_utils.py
 ├── pyproject.toml           # Package configuration
 ├── README.md                # This file
 └── LICENSE                  # License information
@@ -31,7 +33,7 @@ uv sync
 
 ---
 
-## 🧪 Running Tests
+## Running Tests
 
 To run the test suite:
 

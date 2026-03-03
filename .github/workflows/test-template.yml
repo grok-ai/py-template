@@ -14,73 +14,85 @@ jobs:
     runs-on: ubuntu-latest
     strategy:
       matrix:
-        remote_option: ["GitHub", "manual", "No"]
-        remote_github_protocol: ["https", "ssh"]
+        remote_url: ["", "https://github.com/grok-ai/dummy-repo.git"]
         use_precommit: [true, false]
         env_init: [true, false]
         exclude:
-          # Exclude "No" + "manual" from using any protocol
-          - remote_option: "No"
-            remote_github_protocol: "ssh"
-          - remote_option: "No"
-            remote_github_protocol: "https"
-          - remote_option: "manual"
-            remote_github_protocol: "ssh"
-          - remote_option: "manual"
-            remote_github_protocol: "https"
+          # Skip remote URL tests with env_init=false (can't push without deps)
+          - remote_url: "https://github.com/grok-ai/dummy-repo.git"
+            env_init: false
 
     steps:
-      - name: 🛎️ Checkout Repository
+      - name: Checkout Repository
         uses: actions/checkout@v4
 
-      - name: ⚡ Install Dependencies (UV)
+      - name: Install Dependencies (UV)
         run: |
           curl -LsSf https://astral.sh/uv/install.sh | sh
           echo "$HOME/.local/bin:$HOME/.cargo/bin" >> $GITHUB_PATH
 
-      - name: 🛠️ Configure Git for Test Repo
+      - name: Configure Git for Test Repo
         run: |
           git config --global init.defaultBranch main
           git config --global user.name "GitHubActions"
           git config --global user.email "github-actions@users.noreply.github.com"
 
-      - name: 🚀 Generate Project with
+      - name: Get Copier Version
+        id: copier-version
         run: |
-          uvx --from "copier==9.5.0" copier copy --trust --force . ${{ env.PROJECT_NAME }} \
-            -d remote_option=${{ matrix.remote_option }} \
-            -d remote_github_protocol=${{ matrix.remote_github_protocol }} \
-            -d remote_github_username=grok-ai \
-            -d remote_github_project=dummy-repo \
-            -d manual_remote=https://github.com/grok-ai/dummy-repo \
-            -d push_to_remote=false \
+          VERSION=$(grep '_min_copier_version:' copier.yml | sed 's/.*: *"\(.*\)"/\1/')
+          echo "version=$VERSION" >> $GITHUB_OUTPUT
+
+      - name: Generate Project
+        run: |
+          uvx --from "copier==${{ steps.copier-version.outputs.version }}" copier copy --trust --force . ${{ env.PROJECT_NAME }} \
+            -d project_name=testpkg \
+            -d "description=A test project" \
             -d use_precommit=${{ matrix.use_precommit }} \
-            -d env_init=${{ matrix.env_init }}
+            -d env_init=${{ matrix.env_init }} \
+            -d "remote_url=${{ matrix.remote_url }}" \
+            -d push_to_remote=false \
+            -d "extra_dependencies=[]" \
+            -d license=MIT
 
-      - name: 🛠️ Check Git Initialization
+      - name: Check Git Initialization
         working-directory: ${{ env.PROJECT_NAME }}
         run: |
-          if [ -d ".git" ]; then echo "✅ Git initialized"; else echo "❌ Git not initialized" && exit 1; fi
+          if [ -d ".git" ]; then echo "Git initialized"; else echo "Git not initialized" && exit 1; fi
 
-      - name: 🔎 Ensure Pre-Commit is Installed (if enabled)
-        if: matrix.use_precommit
+      - name: Ensure Pre-Commit is Installed (if enabled)
+        if: matrix.use_precommit && matrix.env_init
         working-directory: ${{ env.PROJECT_NAME }}
         run: |
-          if ${{ matrix.env_init }}; then
-            echo "🟢 Using pre-commit inside the virtual environment"
-            uv run pre-commit --version
-          else
-            echo "🟠 Manually (uvx) running pre-commit (no virtual environment)"
-            uvx pre-commit --version
-          fi
+          uv run pre-commit --version
 
-      - name: 📦 Check Dependencies Installation (if env_init=true)
+      - name: Check Dependencies Installation (if env_init=true)
         if: matrix.env_init
         working-directory: ${{ env.PROJECT_NAME }}
         run: |
           uv sync
-          uv pip list | grep rich || { echo "❌ Dependency installation failed"; exit 1; }
+          uv pip list | grep rich || { echo "Dependency installation failed"; exit 1; }
 
-      - name: ✅ Run Tests (if test files exist)
+      - name: Run Tests (if env_init=true)
+        if: matrix.env_init
         working-directory: ${{ env.PROJECT_NAME }}
         run: |
-          if [ -d "tests" ]; then pytest || { echo "❌ Tests failed"; exit 1; } else echo "⚠️ No tests found"; fi
+          if [ -d "tests" ]; then
+            echo "Running pytest on generated project..."
+            uv run pytest tests -v || { echo "Tests failed"; exit 1; }
+          else
+            echo "No tests found in tests"
+            exit 1
+          fi
+
+      - name: Check Remote Configuration
+        if: matrix.remote_url != ''
+        working-directory: ${{ env.PROJECT_NAME }}
+        run: |
+          REMOTE=$(git remote get-url origin 2>/dev/null || echo "")
+          if [ "$REMOTE" = "${{ matrix.remote_url }}" ]; then
+            echo "Remote configured correctly: $REMOTE"
+          else
+            echo "Remote configuration failed. Expected: ${{ matrix.remote_url }}, Got: $REMOTE"
+            exit 1
+          fi

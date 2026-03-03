@@ -1,0 +1,167 @@
+"""Tests for utility functions."""
+
+import os
+import random
+
+import pytest
+
+from {{ package_name }}.utils import (
+    environ,
+    get_env,
+    load_envs,
+    max_seed_value,
+    min_seed_value,
+    seed_everything,
+)
+
+
+class TestGetEnv:
+    """Tests for get_env function."""
+
+    def test_get_existing_var(self, clean_env):
+        """Test retrieving an existing environment variable."""
+        os.environ["TEST_VAR"] = "test_value"
+        assert get_env("TEST_VAR") == "test_value"
+
+    def test_get_missing_var_raises_key_error(self, clean_env):
+        """Test that missing variable without default raises KeyError."""
+        os.environ.pop("NONEXISTENT_VAR", None)
+        with pytest.raises(KeyError, match="NONEXISTENT_VAR not defined"):
+            get_env("NONEXISTENT_VAR")
+
+    def test_get_missing_var_returns_default(self, clean_env):
+        """Test that missing variable with default returns default."""
+        os.environ.pop("NONEXISTENT_VAR", None)
+        assert get_env("NONEXISTENT_VAR", default="default_value") == "default_value"
+
+    def test_get_empty_var_raises_value_error(self, clean_env):
+        """Test that empty variable without default raises ValueError."""
+        os.environ["EMPTY_VAR"] = ""
+        with pytest.raises(ValueError, match="EMPTY_VAR has yet to be configured"):
+            get_env("EMPTY_VAR")
+
+    def test_get_empty_var_returns_default(self, clean_env):
+        """Test that empty variable with default returns default."""
+        os.environ["EMPTY_VAR"] = ""
+        assert get_env("EMPTY_VAR", default="default_value") == "default_value"
+
+
+class TestLoadEnvs:
+    """Tests for load_envs function."""
+
+    def test_load_from_file(self, clean_env, temp_env_file):
+        """Test loading environment variables from a specific file."""
+        os.environ.pop("TEST_VAR", None)
+        os.environ.pop("ANOTHER_VAR", None)
+
+        load_envs(str(temp_env_file))
+
+        assert os.environ.get("TEST_VAR") == "test_value"
+        assert os.environ.get("ANOTHER_VAR") == "another_value"
+
+    def test_load_from_cwd_fallback(self, clean_env, temp_dir, monkeypatch):
+        """Test that load_envs falls back to finding .env in cwd."""
+        env_file = temp_dir / ".env"
+        env_file.write_text("CWD_VAR=cwd_value\n")
+
+        monkeypatch.chdir(temp_dir)
+        os.environ.pop("CWD_VAR", None)
+
+        load_envs()
+
+        assert os.environ.get("CWD_VAR") == "cwd_value"
+
+
+class TestEnvironContextManager:
+    """Tests for environ context manager."""
+
+    def test_sets_env_temporarily(self, clean_env):
+        """Test that environ sets environment variables within context."""
+        os.environ.pop("TEMP_VAR", None)
+
+        with environ(TEMP_VAR="temporary_value"):
+            assert os.environ.get("TEMP_VAR") == "temporary_value"
+
+    def test_restores_on_exit(self, clean_env):
+        """Test that environ restores environment after context exit."""
+        os.environ["EXISTING_VAR"] = "original"
+
+        with environ(EXISTING_VAR="modified", NEW_VAR="new"):
+            assert os.environ.get("EXISTING_VAR") == "modified"
+            assert os.environ.get("NEW_VAR") == "new"
+
+        assert os.environ.get("EXISTING_VAR") == "original"
+        assert os.environ.get("NEW_VAR") is None
+
+    def test_restores_on_exception(self, clean_env):
+        """Test that environ restores environment even when exception occurs."""
+        os.environ["EXISTING_VAR"] = "original"
+
+        with pytest.raises(RuntimeError):
+            with environ(EXISTING_VAR="modified"):
+                assert os.environ.get("EXISTING_VAR") == "modified"
+                raise RuntimeError("Test exception")
+
+        assert os.environ.get("EXISTING_VAR") == "original"
+
+
+class TestSeedEverything:
+    """Tests for seed_everything function."""
+
+    def test_explicit_seed(self, clean_env):
+        """Test seeding with an explicit value."""
+        seed = seed_everything(42)
+        assert seed == 42
+        assert os.environ.get("PL_GLOBAL_SEED") == "42"
+
+    def test_seed_from_env(self, clean_env):
+        """Test that seed is read from PL_GLOBAL_SEED environment variable."""
+        os.environ["PL_GLOBAL_SEED"] = "123"
+        seed = seed_everything()
+        assert seed == 123
+
+    def test_random_seed_when_none(self, clean_env):
+        """Test that random seed is selected when no seed provided."""
+        os.environ.pop("PL_GLOBAL_SEED", None)
+        seed = seed_everything()
+        assert min_seed_value <= seed <= max_seed_value
+        assert os.environ.get("PL_GLOBAL_SEED") == str(seed)
+
+    def test_invalid_env_seed(self, clean_env):
+        """Test handling of invalid PL_GLOBAL_SEED value."""
+        os.environ["PL_GLOBAL_SEED"] = "not_a_number"
+        seed = seed_everything()
+        assert min_seed_value <= seed <= max_seed_value
+
+    def test_out_of_bounds_seed(self, clean_env):
+        """Test handling of out-of-bounds seed value."""
+        seed = seed_everything(max_seed_value + 1)
+        assert min_seed_value <= seed <= max_seed_value
+
+    def test_negative_seed(self, clean_env):
+        """Test handling of negative seed value."""
+        seed = seed_everything(-1)
+        assert min_seed_value <= seed <= max_seed_value
+
+    def test_reproducibility(self, clean_env):
+        """Test that same seed produces reproducible results."""
+        seed_everything(42)
+        random_val1 = random.random()
+
+        seed_everything(42)
+        random_val2 = random.random()
+
+        assert random_val1 == random_val2
+
+        try:
+            import numpy as np
+
+            seed_everything(42)
+            numpy_val1 = np.random.rand()
+
+            seed_everything(42)
+            numpy_val2 = np.random.rand()
+
+            assert numpy_val1 == numpy_val2
+        except ImportError:
+            pass

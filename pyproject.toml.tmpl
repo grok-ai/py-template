@@ -6,7 +6,7 @@ build-backend = "setuptools.build_meta"
 enabled = true
 
 [project]
-name = "{{ package_name }}"
+name = "{{ project_name | lower | replace(' ', '-') }}"
 description = "{{ description }}"
 dynamic = ["version"]
 readme = "README.md"
@@ -16,7 +16,6 @@ dependencies = [
     {% for dep in dependencies %}
     "{{ dep }}",
     {% endfor %}
-    "{{ package_name }}"  # Add the current package name as a fixed dependency
 ]
 
 maintainers = [
@@ -25,16 +24,13 @@ maintainers = [
 {% endfor %}
 ]
 
-[tool.uv.sources]
-{{ package_name }} = { workspace = true }
-
 [tool.pytest.ini_options]
 minversion = "6.2"
 addopts = "-ra"
-testpaths = ["src/tests"]
+testpaths = ["tests"]
 
 [tool.mypy]
-files = ["src/**/*.py", "src/tests/**/*.py"]
+files = ["src/**/*.py", "tests/**/*.py"]
 ignore_missing_imports = true
 
 [tool.ruff]
@@ -47,7 +43,18 @@ exclude = [
 ]
 line-length = 88
 indent-width = 4
-target-version = "py38"
+target-version = "py39"
 
-[project.optional-dependencies]
-test = ["pytest", "pytest-cov"]
+[tool.ruff.lint]
+select = ["E", "F", "I", "W"]
+# Enable autofix for all fixable rules
+fixable = ["ALL"]
+unfixable = []
+
+[tool.ruff.lint.isort]
+known-first-party = ["{{ package_name }}"]
+force-sort-within-sections = true
+combine-as-imports = true
+
+[dependency-groups]
+dev = ["pytest", "pytest-cov"]

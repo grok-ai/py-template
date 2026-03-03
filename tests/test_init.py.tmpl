@@ -1,0 +1,68 @@
+"""Tests for package initialization."""
+
+import logging
+from pathlib import Path
+
+
+class TestProjectRoot:
+    """Tests for get_project_root() function."""
+
+    def test_get_project_root_returns_path(self):
+        """Test that get_project_root() returns a valid Path."""
+        from {{ package_name }} import get_project_root
+
+        result = get_project_root()
+        assert result is not None
+        assert isinstance(result, Path)
+        assert result.exists()
+
+    def test_get_project_root_is_directory(self):
+        """Test that get_project_root() returns a directory."""
+        from {{ package_name }} import get_project_root
+
+        result = get_project_root()
+        assert result.is_dir()
+
+
+class TestLoggingSetup:
+    """Tests for logging configuration."""
+
+    def test_logger_exists(self):
+        """Test that logger is configured."""
+        import {{ package_name }}
+
+        logger = logging.getLogger({{ package_name }}.__name__)
+        assert logger is not None
+
+    def test_rich_imports_work(self):
+        """Test that rich logging imports work correctly."""
+        from rich.logging import RichHandler
+        from rich.traceback import install
+
+        # These should be importable without error
+        assert RichHandler is not None
+        assert install is not None
+
+
+class TestPackageExports:
+    """Tests for package exports."""
+
+    def test_all_exports(self):
+        """Test that __all__ exports are accessible."""
+        from {{ package_name }} import __all__
+
+        assert "get_project_root" in __all__
+
+    def test_utils_importable(self):
+        """Test that utils module is importable."""
+        from {{ package_name }}.utils import (
+            environ,
+            get_env,
+            load_envs,
+            seed_everything,
+        )
+
+        assert callable(environ)
+        assert callable(get_env)
+        assert callable(load_envs)
+        assert callable(seed_everything)

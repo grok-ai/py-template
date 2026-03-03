@@ -1,120 +1,117 @@
 _min_copier_version: "9.5.0"
 _templates_suffix: ".tmpl"
+_exclude:
+  - .git
+  - copier.yml
+  - setup.sh
+  - .github
+  - template_tests
+  - scripts
+  - docs
 
-package_name:
+# =============================================================================
+# Group 1: Essential Project Information
+# =============================================================================
+
+project_name:
   type: str
-  help: "Enter the Python package name (default: folder name in lowercase, no spaces)"
-  default: "{{ _copier_conf.dst_path|basename|lower|replace(' ', '_') }}"
+  help: "Project name (can have hyphens/spaces)"
+  default: "{{ _copier_conf.dst_path | basename }}"
 
 description:
   type: str
-  help: "Enter a short description of your project"
+  help: "Short description of your project"
   default: "A Python project generated with grok-ai/py-template."
 
-maintainers:
-  type: yaml
-  help: "Enter a list of maintainers (name and optional email)"
-  default:
-    - { name: "Your Name", email: "your.email@example.com" }
+# =============================================================================
+# Group 2: Development Setup
+# =============================================================================
 
-remote_option:
-  help: "Do you want to push the project to an existing repository? If so, how would you like to add the remote?"
-  type: str
-  choices:
-    - "GitHub"
-    - "manual"
-    - "No"
-  default: "GitHub"
+use_precommit:
+  type: bool
+  help: "Enable pre-commit hooks for code quality?"
+  default: true
 
-manual_remote:
-  type: str
-  help: "Enter the remote URL"
-  default: "https://github.com/grok-ai/py-template"
-  when: "{{ remote_option == 'manual' }}"
+env_init:
+  type: bool
+  help: "Initialize virtual environment and install dependencies?"
+  default: true
 
-remote_github_protocol:
+python_version:
   type: str
-  help: "Choose the GitHub protocol"
-  choices:
-    - "https"
-    - "ssh"
-  default: "https"
-  when: "{{ remote_option == 'GitHub' }}"
+  help: "Minimum Python version"
+  default: ">=3.9"
 
-remote_github_username:
-  type: str
-  help: "Enter your GitHub username"
-  default: "grok-ai"
-  when: "{{ remote_option == 'GitHub' }}"
+# =============================================================================
+# Group 3: Remote Configuration (Simplified)
+# =============================================================================
 
-remote_github_project:
+remote_url:
   type: str
-  help: "Enter the name of the GitHub project"
-  default: "{{ package_name }}"
-  when: "{{ remote_option == 'GitHub' }}"
+  help: "Git remote URL (leave empty to skip remote setup)"
+  default: ""
 
 push_to_remote:
   type: bool
-  help: "Do you want to push the project to the remote repository?"
-  when: "{{ remote_option != 'No' }}"
-  default: true
+  help: "Push to remote after initialization?"
+  when: "{{ remote_url != '' }}"
+  default: false
+
+# =============================================================================
+# Group 4: Advanced Options
+# =============================================================================
+
+extra_dependencies:
+  type: yaml
+  help: "Additional dependencies beyond core (rich, python-dotenv, GitPython)"
+  default: []
+
+maintainers:
+  type: yaml
+  help: "Project maintainers (list with name and optional email)"
+  default:
+    - { name: "Your Name", email: "your.email@example.com" }
 
 license:
   type: str
-  help: "Choose a license"
+  help: "Project license"
   default: "MIT"
   choices:
     - "MIT"
     - "Apache-2.0"
 
-python_version:
-  type: str
-  help: "Python version (>=3.9 recommended)"
-  default: ">=3.9"
+# =============================================================================
+# Computed Variables (not shown to user)
+# =============================================================================
 
-use_precommit:
-  type: bool
-  help: "Enable pre-commit hooks?"
-  default: true
-
-dependencies:
-  type: yaml
-  help: "Enter a list of dependencies (comma-separated). The suggested ones are essential for the template to fully work."
-  default: |
-    - rich
-    - dvc
-    - python-dotenv
-    - GitPython
-    {% if use_precommit %}- pre-commit{% endif %}
-
-env_init:
-  type: bool
-  help: "Do you want to initialize the environment?"
-  default: true
-
-remote:
+# Package name computed from project_name (always valid Python identifier)
+package_name:
   type: str
   when: false
-  default: >
-    {% if remote_option == "GitHub" %}
-      {% if remote_github_protocol == "https" -%}
-        https://github.com/{{ remote_github_username }}/{{ remote_github_project }}.git
-      {%- elif remote_github_protocol == "ssh" -%}
-        git@github.com:{{ remote_github_username }}/{{ remote_github_project }}.git
-      {%- endif %}
-    {%- elif remote_option == "manual" %}
-      {{ manual_remote if manual_remote else "" }}
-    {%- else %}
-      ""  # No remote URL
-    {%- endif %}
+  default: "{{ project_name | lower | replace(' ', '_') | replace('-', '_') }}"
+
+# Core dependencies that are always included
+core_dependencies:
+  type: yaml
+  when: false
+  default:
+    - rich
+    - python-dotenv
+    - GitPython
+
+# Combined dependencies list
+dependencies:
+  type: yaml
+  when: false
+  default: "{{ core_dependencies + (['pre-commit'] if use_precommit else []) + extra_dependencies }}"
+
+# =============================================================================
+# Post-Generation Tasks
+# =============================================================================
 
 _tasks:
-  - "rm -rf setup.sh .github" # Remove template-specific files
-  - "{% if env_init %}uv sync{% endif %}"
-  - "git init"
-  - "{% if use_precommit %}uv run pre-commit install{% endif %}" # Assuming pre-commit is installed system-wide or in the venv
-  - "git add ."
-  - "git commit -m 'Project initialization with https://github.com/grok-ai/py-template' --no-verify"
-  # Add remote only if it's set
-  - "{% if remote_option != 'No' %}git remote add origin {{ remote.strip() }}{% endif %}"
-  - "{% if remote_option != 'No' and push_to_remote %}git push -u origin main{% endif %}"
+  - "{% if env_init %}echo '[1/4] Installing dependencies...' && uv sync{% endif %}"
+  - "echo '[2/4] Initializing Git repository...' && git init"
+  - "{% if use_precommit and env_init %}echo '[3/4] Installing pre-commit hooks...' && uv run pre-commit install{% else %}echo '[3/4] Skipping pre-commit{% if not env_init %} (no env){% elif not use_precommit %} (disabled){% endif %}'{% endif %}"
+  - "echo '[4/4] Creating initial commit...' && git add . && git commit -m 'Project initialization with https://github.com/grok-ai/py-template' --no-verify"
+  - "{% if remote_url %}echo 'Configuring remote...' && git remote add origin {{ remote_url }}{% if push_to_remote %} && git push -u origin main{% endif %}{% else %}echo 'Skipping remote setup'{% endif %}"

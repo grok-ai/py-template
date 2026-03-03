@@ -25,8 +25,12 @@ fi
 
 echo "✅ 'uv' is installed!"
 
+# Get copier version from copier.yml (single source of truth)
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+COPIER_VERSION=$(grep '_min_copier_version:' "$SCRIPT_DIR/copier.yml" | sed 's/.*: *"\(.*\)"/\1/')
+
 # Run Copier using UVX (no global install)
 echo "📦 Running Copier for project '$folder_name'..."
-uvx --from "copier==9.5.0" copier copy --trust gh:grok-ai/py-template "$folder_name"
+uvx --from "copier==$COPIER_VERSION" copier copy --trust gh:grok-ai/py-template "$folder_name"
 
 echo "🎉 Done! Your project is ready in '$folder_name'."

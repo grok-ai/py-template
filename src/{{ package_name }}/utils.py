@@ -2,13 +2,32 @@ import logging
 import os
 import random
 from contextlib import contextmanager
+from functools import lru_cache
+from pathlib import Path
 from typing import Optional
 
-
 import dotenv
-import numpy as np
 
 pylogger = logging.getLogger(__name__)
+
+
+@lru_cache
+def get_project_root() -> Path:
+    """Return the project root directory.
+
+    Uses GitPython to find the repository root. Falls back to the current
+    working directory if not in a git repository. The result is cached after
+    the first call.
+
+    Returns:
+        Path to the project root directory.
+    """
+    try:
+        import git
+
+        return Path(git.Repo(Path.cwd(), search_parent_directories=True).working_dir)
+    except Exception:
+        return Path.cwd()
 
 
 def get_env(env_name: str, default: Optional[str] = None) -> str:
@@ -81,8 +100,8 @@ def environ(**kwargs):
         os.environ.update(old_environ)
 
 
-max_seed_value = np.iinfo(np.uint32).max
-min_seed_value = np.iinfo(np.uint32).min
+max_seed_value = 2**32 - 1  # np.iinfo(np.uint32).max
+min_seed_value = 0  # np.iinfo(np.uint32).min
 
 
 # https://github.com/Lightning-AI/lightning/blob/f6a36cf2204b8a6004b11cf0e21879872a63f414/src/lightning/fabric/utilities/seed.py#L19
@@ -130,7 +149,12 @@ def seed_everything(seed: Optional[int] = None) -> int:
     pylogger.info(f"Seed set to {seed}")
     os.environ["PL_GLOBAL_SEED"] = str(seed)
     random.seed(seed)
-    np.random.seed(seed)
+    try:
+        import numpy as np
+
+        np.random.seed(seed)
+    except ImportError:
+        pylogger.info("NumPy not installed; skipping numpy seeding.")
     try:
         import torch
 
